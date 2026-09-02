@@ -180,6 +180,11 @@ class SmartButtons(loader.Module):
         "inline_title": "Interactive Buttons",
         "inline_desc": "Usage: btn Text | [Button](url)",
         "inline_help": "<b>[SmartButtons]</b> Format: <code>@bot btn Text | [Button](url)</code>",
+        "_cmd_doc_btnsend": "<chat_id/@username> <text> [buttons] - Send message with buttons to specified chat or channel",
+        "chat_not_found": "<b>[SmartButtons]</b> Chat or channel <code>{}</code> not found.",
+        "sent_to_chat": "<b>[SmartButtons]</b> Message with buttons sent to <code>{}</code>.",
+        "specify_chat": "<b>[SmartButtons]</b> Specify target chat (@username or ID) and message text.",
+        "sending_to_chat": "<b>[SmartButtons]</b> Sending message with buttons...",
     }
 
     strings_ru = {
@@ -191,9 +196,12 @@ class SmartButtons(loader.Module):
         "help_text": (
             "<b>[SmartButtons Справка]</b>\n\n"
             "<b>Использование:</b>\n"
-            "<code>.btn Текст сообщения\n"
-            "[Кнопка 1](https://t.me/link) [Кнопка 2 :primary](https://t.me/link)\n"
-            "[Красная кнопка :danger](https://t.me/link)\n"
+            "• <code>.btn Текст сообщения\n"
+            "[Кнопка 1](https://t.me/link) [Кнопка 2 :primary](https://t.me/link)</code>\n"
+            "• <code>.btnsend @channel Текст\n"
+            "[Кнопка 1](https://t.me/link)</code> — отправка в указанный чат/канал\n\n"
+            "<b>Кнопки:</b>\n"
+            "<code>[Красная кнопка :danger](https://t.me/link)\n"
             "[Зеленая с эмодзи :success :5431402435497181911](https://t.me/link)\n"
             "[Скопировать :copy:Текст для буфера]\n"
             "[Всплывающее окно :alert:Текст алерта]\n"
@@ -213,7 +221,22 @@ class SmartButtons(loader.Module):
         "inline_title": "Сообщение с кнопками",
         "inline_desc": "Формат: btn Текст | [Кнопка](url)",
         "inline_help": "<b>[SmartButtons]</b> Формат: <code>@bot btn Текст | [Кнопка](url)</code>",
+        "_cmd_doc_btnsend": "<чат/@username> <текст> [кнопки] - Отправить сообщение с кнопками в указанный чат или канал",
+        "chat_not_found": "<b>[SmartButtons]</b> Чат или канал <code>{}</code> не найден.",
+        "sent_to_chat": "<b>[SmartButtons]</b> Сообщение с кнопками отправлено в <code>{}</code>.",
+        "specify_chat": "<b>[SmartButtons]</b> Укажите целевой чат (@username или ID) и текст сообщения.",
+        "sending_to_chat": "<b>[SmartButtons]</b> Отправка сообщения с кнопками...",
     }
+
+    async def _resolve_chat(self, chat_ref: str):
+        try:
+            target = int(chat_ref)
+        except ValueError:
+            target = chat_ref
+        try:
+            return await self._client.get_entity(target)
+        except Exception:
+            return None
 
     @loader.command()
     @loader.tag(aliases=["button", "buttons", "ibtn"])
@@ -236,6 +259,17 @@ class SmartButtons(loader.Module):
             await utils.answer(message, self.strings("no_args"))
             return
 
+        chat_match = re.search(r"--(?:chat|to)\s+([^\s]+)", raw_text)
+        target_entity = None
+        chat_ref = None
+        if chat_match:
+            chat_ref = chat_match.group(1)
+            raw_text = (raw_text[:chat_match.start()] + raw_text[chat_match.end():]).strip()
+            target_entity = await self._resolve_chat(chat_ref)
+            if not target_entity:
+                await utils.answer(message, self.strings("chat_not_found").format(utils.escape_html(chat_ref)))
+                return
+
         clean_text, rows, photo_url = parse_buttons(raw_text)
         if not clean_text and not rows:
             await utils.answer(message, self.strings("no_args"))
@@ -257,7 +291,7 @@ class SmartButtons(loader.Module):
                 await utils.answer(status_msg, self.strings("upload_failed"))
                 return
 
-        target_message = status_msg or message
+        target_message = target_entity or status_msg or message
         try:
             res = await self.inline.form(
                 text=clean_text,
@@ -266,11 +300,79 @@ class SmartButtons(loader.Module):
                 photo=photo_url,
                 silent=True,
             )
-            if not res and status_msg:
+            if target_entity:
+                chat_title = getattr(target_entity, "title", None) or getattr(target_entity, "username", None) or str(chat_ref)
+                await utils.answer(status_msg or message, self.strings("sent_to_chat").format(utils.escape_html(str(chat_title))))
+            elif not res and status_msg:
                 await status_msg.delete()
         except Exception as e:
             logger.exception("Failed to send smart buttons form")
-            await utils.answer(target_message, f"<b>[Error]</b> {utils.escape_html(str(e))}")
+            await utils.answer(status_msg or message, f"<b>[Error]</b> {utils.escape_html(str(e))}")
+
+    @loader.command()
+    @loader.tag(aliases=["btns", "sendbtn", "buttonsend"])
+    async def btnsend(self, message: Message):
+        """<chat_id/@username> <text> [buttons] - Send message with buttons to specified chat or channel"""
+        if not hasattr(self, "inline") or (
+            not getattr(self.inline, "init_complete", False)
+            and not getattr(self.inline, "bot_username", None)
+        ):
+            await utils.answer(message, self.strings("no_inline"))
+            return
+
+        args = (utils.get_args_raw(message) or "").strip()
+        reply = await message.get_reply_message()
+
+        if not args:
+            await utils.answer(message, self.strings("specify_chat"))
+            return
+
+        parts = args.split(None, 1)
+        chat_ref = parts[0]
+        raw_text = parts[1] if len(parts) > 1 else ""
+
+        if not raw_text and reply and reply.raw_text:
+            raw_text = reply.raw_text
+
+        if not raw_text:
+            await utils.answer(message, self.strings("specify_chat"))
+            return
+
+        target_entity = await self._resolve_chat(chat_ref)
+        if not target_entity:
+            await utils.answer(message, self.strings("chat_not_found").format(utils.escape_html(chat_ref)))
+            return
+
+        clean_text, rows, photo_url = parse_buttons(raw_text)
+        if not clean_text and not rows:
+            await utils.answer(message, self.strings("no_args"))
+            return
+
+        if not clean_text:
+            clean_text = " "
+
+        status_msg = await utils.answer(message, self.strings("sending_to_chat"))
+
+        if not photo_url and reply and (reply.photo or (reply.file and reply.file.mime_type and reply.file.mime_type.startswith("image/"))):
+            with tempfile.TemporaryDirectory() as tmp:
+                in_img = os.path.join(tmp, "image.jpg")
+                dl_file = await message.client.download_media(reply, file=in_img)
+                if dl_file and os.path.exists(dl_file):
+                    photo_url = await upload_image(dl_file)
+
+        try:
+            res = await self.inline.form(
+                text=clean_text,
+                message=target_entity,
+                reply_markup=rows,
+                photo=photo_url,
+                silent=True,
+            )
+            chat_title = getattr(target_entity, "title", None) or getattr(target_entity, "username", None) or str(chat_ref)
+            await utils.answer(status_msg, self.strings("sent_to_chat").format(utils.escape_html(str(chat_title))))
+        except Exception as e:
+            logger.exception("Failed to send smart buttons form to chat")
+            await utils.answer(status_msg, f"<b>[Error]</b> {utils.escape_html(str(e))}")
 
     @loader.command()
     async def btnhelp(self, message: Message):
