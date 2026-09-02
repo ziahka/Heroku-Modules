@@ -234,9 +234,12 @@ class SmartButtons(loader.Module):
         except ValueError:
             target = chat_ref
         try:
-            return await self._client.get_entity(target)
+            entity = await self._client.get_entity(target)
+            peer_id = utils.get_entity_id(entity)
+            title = getattr(entity, "title", None) or getattr(entity, "username", None) or getattr(entity, "first_name", None) or str(chat_ref)
+            return entity, peer_id, title
         except Exception:
-            return None
+            return None, None, None
 
     @loader.command()
     @loader.tag(aliases=["button", "buttons", "ibtn"])
@@ -260,13 +263,13 @@ class SmartButtons(loader.Module):
             return
 
         chat_match = re.search(r"--(?:chat|to)\s+([^\s]+)", raw_text)
-        target_entity = None
-        chat_ref = None
+        target_chat_id = None
+        target_title = None
         if chat_match:
             chat_ref = chat_match.group(1)
             raw_text = (raw_text[:chat_match.start()] + raw_text[chat_match.end():]).strip()
-            target_entity = await self._resolve_chat(chat_ref)
-            if not target_entity:
+            _, target_chat_id, target_title = await self._resolve_chat(chat_ref)
+            if not target_chat_id:
                 await utils.answer(message, self.strings("chat_not_found").format(utils.escape_html(chat_ref)))
                 return
 
@@ -291,7 +294,7 @@ class SmartButtons(loader.Module):
                 await utils.answer(status_msg, self.strings("upload_failed"))
                 return
 
-        target_message = target_entity or status_msg or message
+        target_message = target_chat_id or status_msg or message
         try:
             res = await self.inline.form(
                 text=clean_text,
@@ -300,9 +303,8 @@ class SmartButtons(loader.Module):
                 photo=photo_url,
                 silent=True,
             )
-            if target_entity:
-                chat_title = getattr(target_entity, "title", None) or getattr(target_entity, "username", None) or str(chat_ref)
-                await utils.answer(status_msg or message, self.strings("sent_to_chat").format(utils.escape_html(str(chat_title))))
+            if target_chat_id:
+                await utils.answer(status_msg or message, self.strings("sent_to_chat").format(utils.escape_html(str(target_title))))
             elif not res and status_msg:
                 await status_msg.delete()
         except Exception as e:
@@ -338,8 +340,8 @@ class SmartButtons(loader.Module):
             await utils.answer(message, self.strings("specify_chat"))
             return
 
-        target_entity = await self._resolve_chat(chat_ref)
-        if not target_entity:
+        _, target_chat_id, target_title = await self._resolve_chat(chat_ref)
+        if not target_chat_id:
             await utils.answer(message, self.strings("chat_not_found").format(utils.escape_html(chat_ref)))
             return
 
@@ -363,13 +365,12 @@ class SmartButtons(loader.Module):
         try:
             res = await self.inline.form(
                 text=clean_text,
-                message=target_entity,
+                message=target_chat_id,
                 reply_markup=rows,
                 photo=photo_url,
                 silent=True,
             )
-            chat_title = getattr(target_entity, "title", None) or getattr(target_entity, "username", None) or str(chat_ref)
-            await utils.answer(status_msg, self.strings("sent_to_chat").format(utils.escape_html(str(chat_title))))
+            await utils.answer(status_msg, self.strings("sent_to_chat").format(utils.escape_html(str(target_title))))
         except Exception as e:
             logger.exception("Failed to send smart buttons form to chat")
             await utils.answer(status_msg, f"<b>[Error]</b> {utils.escape_html(str(e))}")
