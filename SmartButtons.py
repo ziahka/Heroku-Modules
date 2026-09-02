@@ -219,7 +219,10 @@ class SmartButtons(loader.Module):
     @loader.tag(aliases=["button", "buttons", "ibtn"])
     async def btn(self, message: Message):
         """<text> [buttons] - Send message with custom colored buttons, emojis, and image"""
-        if not hasattr(self, "inline") or not getattr(self.inline, "init", False):
+        if not hasattr(self, "inline") or (
+            not getattr(self.inline, "init_complete", False)
+            and not getattr(self.inline, "bot_username", None)
+        ):
             await utils.answer(message, self.strings("no_inline"))
             return
 
