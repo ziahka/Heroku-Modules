@@ -1,3 +1,5 @@
+# meta developer: @exterame
+
 __version__ = (1, 0, 0)
 
 import asyncio
