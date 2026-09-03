@@ -2,3 +2,5 @@ SmartMedia
 SmartButtons
 SmartPurge
 exteraStealth
+exteraLingua
+exteraCode
