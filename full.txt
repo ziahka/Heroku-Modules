@@ -1,3 +1,4 @@
 SmartMedia
 SmartButtons
 SmartPurge
+exteraStealth
