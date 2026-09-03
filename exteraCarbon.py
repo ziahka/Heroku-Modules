@@ -161,7 +161,8 @@ class exteraCarbon(loader.Module):
     strings = {
         "name": "exteraCarbon",
         "_cls_doc": "High-resolution Carbon-style code card generator with syntax highlighting. Developer: @exterame",
-        "usage": "<b>[!]</b> Provide code text or reply to a message containing code.",
+        "_cmd_doc_carbon": "[-t filename] [--nolines] [--amoled|--nord] [code or reply] - Render Carbon code card",
+        "usage": "<b>[!]</b> Provide code or reply to message. Flags: <code>-t &lt;name&gt;</code>, <code>--nolines</code>, <code>--amoled</code>, <code>--nord</code>",
         "rendering": "<b>[~]</b> Generating Carbon code card...",
         "caption": "<b>[>] Generated via exteraCarbon</b>",
         "error": "<b>[!]</b> Failed to render code card: <code>{}</code>",
@@ -169,16 +170,17 @@ class exteraCarbon(loader.Module):
 
     strings_ru = {
         "_cls_doc": "Генератор красивых карточек с кодом в стиле Carbon с подсветкой синтаксиса. Разработчик: @exterame",
-        "usage": "<b>[!]</b> Введите код или ответьте на сообщение с кодом.",
+        "_cmd_doc_carbon": "[-t имя_файла] [--nolines] [--amoled|--nord] [код или реплай] - Отрисовать карточку кода в стиле Carbon",
+        "usage": "<b>[!]</b> Введите код или ответьте на сообщение. Флаги: <code>-t &lt;имя&gt;</code>, <code>--nolines</code>, <code>--amoled</code>, <code>--nord</code>",
         "rendering": "<b>[~]</b> Генерация карточки с кодом...",
         "caption": "<b>[>] Сгенерировано через exteraCarbon</b>",
         "error": "<b>[!]</b> Не удалось создать карточку: <code>{}</code>",
     }
 
-    @loader.command()
+    @loader.command(ru_doc="[-t имя_файла] [--nolines] [--amoled|--nord] [код или реплай] - Отрисовать карточку кода в стиле Carbon")
     @loader.tag(aliases=["carb", "codecard"])
     async def carbon(self, message: Message):
-        """[title] [flags] <code> - Render high-resolution Carbon code card image"""
+        """[-t filename] [--nolines] [--amoled|--nord] [code or reply] - Render Carbon code card"""
         args = (utils.get_args_raw(message) or "").strip()
         reply = await message.get_reply_message()
 
