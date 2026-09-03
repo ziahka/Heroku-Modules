@@ -125,7 +125,7 @@ class exteraLingua(loader.Module):
         "langs_list": (
             "<b>[>] Supported Language Codes:</b>\n\n"
             "{list}\n\n"
-            "Usage: <code>.tr en Hello</code> or <code>.autotr de</code>"
+            "Usage: <code>.lingua en Hello</code> or <code>.autotr de</code>"
         ),
     }
 
@@ -152,7 +152,7 @@ class exteraLingua(loader.Module):
         "langs_list": (
             "<b>[>] Популярные коды языков:</b>\n\n"
             "{list}\n\n"
-            "Использование: <code>.tr en Привет</code> или <code>.autotr de</code>"
+            "Использование: <code>.lingua en Привет</code> или <code>.autotr de</code>"
         ),
     }
 
@@ -161,8 +161,8 @@ class exteraLingua(loader.Module):
         self._client = client
 
     @loader.command()
-    @loader.tag(aliases=["translate"])
-    async def tr(self, message: Message):
+    @loader.tag(aliases=["tl", "trans", "extr"])
+    async def lingua(self, message: Message):
         """[lang] [text or reply] - Translate text to target language"""
         args = (utils.get_args_raw(message) or "").strip()
         reply = await message.get_reply_message()
