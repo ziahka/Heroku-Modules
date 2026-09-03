@@ -198,6 +198,11 @@ class exteraCarbon(loader.Module):
             theme = "nord"
             code_text = code_text.replace("--nord", "").strip()
 
+        title_match = re.search(r"(?:--title|-t)\s+([^\s]+)", code_text)
+        if title_match:
+            title = title_match.group(1)
+            code_text = (code_text[:title_match.start()] + code_text[title_match.end():]).strip()
+
         if not code_text and reply:
             code_text = reply.raw_text or ""
 
@@ -205,11 +210,12 @@ class exteraCarbon(loader.Module):
             await utils.answer(message, self.strings("usage"))
             return
 
-        first_line = code_text.splitlines()[0].strip()
-        if first_line.startswith(("#", "//", "/*")) and len(first_line.split()) > 1:
-            potential_title = first_line.lstrip("#/* ").strip()
-            if "." in potential_title and len(potential_title) < 32:
-                title = potential_title
+        if title == "code.py":
+            first_line = code_text.splitlines()[0].strip()
+            if first_line.startswith(("#", "//", "/*")) and len(first_line.split()) > 1:
+                potential_title = first_line.lstrip("#/* ").strip()
+                if "." in potential_title and len(potential_title) < 32:
+                    title = potential_title
 
         status_msg = await utils.answer(message, self.strings("rendering"))
         loop = asyncio.get_event_loop()
