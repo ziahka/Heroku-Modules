@@ -2,6 +2,7 @@
 
 __version__ = (1, 0, 0)
 
+import asyncio
 import io
 import logging
 import os
@@ -207,7 +208,7 @@ class exteraCarbon(loader.Module):
                 title = potential_title
 
         status_msg = await utils.answer(message, self.strings("rendering"))
-        loop = utils.get_event_loop()
+        loop = asyncio.get_event_loop()
         try:
             png_data = await loop.run_in_executor(
                 None, render_carbon_card, code_text, title, show_lines, theme
