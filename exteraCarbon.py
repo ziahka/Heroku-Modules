@@ -28,21 +28,25 @@ TOKEN_COLORS = {
 
 LINE_TOKEN_RE = re.compile(
     r'(?P<COMMENT>#[^\n]*|//[^\n]*)'
-    r'|(?P<STRING>\"\"\"[\s\S]*?\"\"\"|\'\'\'[\s\S]*?\'\'\'|\"[^\"\n]*\"|\'[^\'\n]*\')'
-    r'|(?P<DECORATOR>@[a-zA-Z0-9_\.]+)'
+    r'|(?P<STRING>\"\"\"[\s\S]*?\"\"\"|\'\'\'[\s\S]*?\'\'\'|\"[^\"\n]*\"|\'[^\'\n]*\'|[“\"][^”\"\n]*[”\"])'
+    r'|(?P<DECORATOR>@[^\s\(\)\[\]\{\}]+)'
     r'|(?P<KEYWORD>\b(?:def|class|import|from|return|if|else|elif|for|while|async|await|try|except|finally|with|as|lambda|yield|pass|break|continue|const|let|var|function|True|False|None)\b)'
     r'|(?P<NUMBER>\b\d+(?:\.\d+)?\b|0x[0-9a-fA-F]+)'
-    r'|(?P<CALL>\b[a-zA-Z_][a-zA-Z0-9_]*(?=\s*\())'
-    r'|(?P<IDENT>[a-zA-Z_][a-zA-Z0-9_]*)'
+    r'|(?P<CALL>\b\w+(?=\s*\())'
+    r'|(?P<IDENT>\b\w+\b)'
     r'|(?P<SPACE>\s+)'
-    r'|(?P<OTHER>[^\s\w]+)'
+    r'|(?P<OTHER>.)'
 )
 
 SYSTEM_FONTS = [
+    "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
     "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+    "/usr/share/fonts/liberation-mono/LiberationMono-Regular.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeMono.ttf",
     "/data/data/com.termux/files/usr/share/fonts/TTF/DejaVuSansMono.ttf",
+    "/data/data/com.termux/files/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    "LiberationMono-Regular.ttf",
     "DejaVuSansMono.ttf",
     "monospace",
 ]
